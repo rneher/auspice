@@ -62,41 +62,40 @@
 		<script src="js/d3.tip.js"></script>	
 		<script src="js/autocomplete.js"></script>	
 		<script src="js/auspice.js"></script>				
-		<script src="js/miniscroll.js"></script>
 
-<div class="scroller">
-  "age"
-</div>
- <a href="#" id="teste">scrollTo(50)</a>
-<script src="../dist/miniscroll.js"></script>
-<script>
-var mini = new Miniscroll("#mini", {
-axis: "y",
-size: 10,
-sizethumb: "auto"
-});
-if (window.addEventListener) {
-document.getElementById("teste").addEventListener("click", onMove, false);
-} else if (window.attachEvent) {
-document.getElementById("teste").attachEvent("onclick", onMove);
-}
-function onMove(event) {
-event.returnValue = false;
-if(event.preventDefault) {
-event.preventDefault();
-}
-mini.scrollTo(50);
-}
-</script>
 
+<hr>
+
+<p>
+  <label for="nDateCutoff" 
+         style="display: inline-block; width: 180px; text-align: left">
+         Date cutoff = <span id="nDateCutoff-value">…</span>
+  </label>
+  <input type="range" min="1" max="100" value="97" id="nDateCutoff">
+</p>
+
+<p>
 Node coloring:
- <select>
+ <select id = "nNodeColoring">
   <option value="date">Date</option>
   <option value="LBI">LBI</option>
-  <option value="deltaLBI">deltaLBI</option>
-  <option value="log-LBI">log-LBI</option>
-  <option value="log-deltaLBI">log-deltaLBI</option>
+  <option value="delta_LBI">deltaLBI</option>
+  <option value="LBI_log">log-LBI</option>
+  <option value="delta_LBI_log">log-deltaLBI</option>
 </select> 
+</p>
+<p></p>
+<p>
+Node sizing:
+ <select id = "nNodeSizing">
+  <option value="date">Date</option>
+  <option value="LBI">LBI</option>
+  <option value="delta_LBI">deltaLBI</option>
+  <option value="LBI_log">log-LBI</option>
+  <option value="delta_LBI_log">log-deltaLBI</option>
+</select> 
+</p>
+
 </body>
 
 </html>
