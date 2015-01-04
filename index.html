@@ -76,13 +76,29 @@
   <input type="range" min="0" max="100" value="100" step="10" id="nDateCutoff">
 </p>
 <p>
+  <label for="nBoundaryLayer" 
+         style="display: inline-block; width: 180px; text-align: left">
+         deltaLBI from = <span id="nBoundaryLayer-value">…</span> days
+  </label>
+</p><p>
+  <input type="range" min="10" max="600" value="100" step="10" id="nBoundaryLayer">
+</p>
+<p>
+  <label for="nLBItau" 
+         style="display: inline-block; width: 180px; text-align: left">
+         LBI time scale = <span id="nLBItau-value">…</span>
+  </label>
+</p><p>
+  <input type="range" min="0.0001" max="0.002" value="0.0005" step="0.0001" id="nLBItau">
+</p>
+<p>
 Node color:
 </p><p>
 <select id = "nNodeColoring">
-  <option selected="selected" value="LBI">LBI</option>
+  <option value="LBI">LBI</option>
   <option value="delta_LBI">deltaLBI</option>
   <option value="LBI_log">log-LBI</option>
-  <option value="delta_LBI_log">log-deltaLBI</option>
+  <option selected="selected" value="delta_LBI_log">log-deltaLBI</option>
   <option value="date">date</option>
   <option value="koel">Koel genotype</option>
 </select> 
@@ -97,6 +113,7 @@ Node size:
   <option value="delta_LBI_log">log-deltaLBI</option>
 </select> 
 </p>
+<p>
 
 </body>
 

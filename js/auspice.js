@@ -223,13 +223,13 @@ function maximumAttribute(node, attr, max) {
 var width = 800,
 	height = 600;
 
-var color_scheme = "LBI"
+var color_scheme = "delta_LBI_log"
 var size_scheme = "LBI"	
 var globalDate = new Date();
 var dateCutoff = globalDate;
 var ymd_format = d3.time.format("%Y-%m-%d");		
-var LBItau = 0.001
-var deltaLBI_boundary_layer = 180;
+var LBItau = 0.0005
+var deltaLBI_boundary_layer = 365;
 var tree = d3.layout.tree()
 	.size([height, width]);
 
@@ -437,7 +437,8 @@ d3.json("20150102_tree_LBI.json", function(error, root) {
 	    else if (color_scheme=="delta_LBI") col = LBIColorScaleLinear(d.delta_LBI);
 	    else if (color_scheme=="delta_LBI_log") col = LBIColorScaleLog(d.delta_LBI);
 	    else if (color_scheme=="koel") col = KoelColorScale(d.koel);
-	    return d3.rgb(col).brighter([0.7]).toString();
+	    //return d3.rgb(col).brighter([0.7]).toString();
+	    return d3.rgb(col).toString();
 	}else{
 	    return "#AAAAAA"
 	}
@@ -496,6 +497,7 @@ d3.json("20150102_tree_LBI.json", function(error, root) {
 	.attr("cy", function(d) { return d.y; })
 	.attr("r", function(d) { return nodeSizing(d);})
 	.style("fill", function(d){return nodeColoring(d);})	
+	.style("opacity",1.0)
 	.style("stroke", function(d){return nodeColoring(d);})
 	.on('mouseover', function(d) {
 	    tooltip.show(d, this);
@@ -623,6 +625,24 @@ d3.json("20150102_tree_LBI.json", function(error, root) {
 	dateCutoff = dateSliderScale.invert(+this.value);
 	d3.select("#nDateCutoff-value").text(ymd_format(dateCutoff));
 	console.log("changing date Cutoff to:" +dateCutoff);
+	calc_deltaLBI(rootNode, nodes, false);
+	tipCirclesUpdate();
+    });
+
+    d3.select("#nBoundaryLayer-value").text(deltaLBI_boundary_layer);
+    d3.select("#nBoundaryLayer").on("change", function(){
+	deltaLBI_boundary_layer =+ this.value;
+	d3.select("#nBoundaryLayer-value").text(deltaLBI_boundary_layer);
+	console.log("changing boundary layer to:" +deltaLBI_boundary_layer);
+	calc_deltaLBI(rootNode, nodes, false);
+	tipCirclesUpdate();
+    });
+
+    d3.select("#nLBItau-value").text(LBItau);
+    d3.select("#nLBItau").on("change", function(){
+	LBItau =+ this.value;
+	d3.select("#nLBItau-value").text(LBItau);
+	console.log("changing LBItau to:" +LBItau);
 	calc_deltaLBI(rootNode, nodes, false);
 	tipCirclesUpdate();
     });
