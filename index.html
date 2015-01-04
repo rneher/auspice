@@ -58,10 +58,11 @@
 					
 			
     	</div>
-
-		<script src="js/d3.tip.js"></script>	
-		<script src="js/autocomplete.js"></script>	
-		<script src="js/auspice.js"></script>				
+		 
+		 <script src="js/colorbrewer.js"></script>				
+		 <script src="js/d3.tip.js"></script>	
+		 <script src="js/autocomplete.js"></script>	
+		 <script src="js/auspice.js"></script>			
 
 
 <hr>
@@ -71,25 +72,26 @@
          style="display: inline-block; width: 180px; text-align: left">
          Date cutoff = <span id="nDateCutoff-value">…</span>
   </label>
-  <input type="range" min="1" max="100" value="97" id="nDateCutoff">
+</p><p>
+  <input type="range" min="0" max="100" value="100" step="10" id="nDateCutoff">
 </p>
-
 <p>
-Node coloring:
- <select id = "nNodeColoring">
-  <option value="date">Date</option>
-  <option value="LBI">LBI</option>
+Node color:
+</p><p>
+<select id = "nNodeColoring">
+  <option selected="selected" value="LBI">LBI</option>
   <option value="delta_LBI">deltaLBI</option>
   <option value="LBI_log">log-LBI</option>
   <option value="delta_LBI_log">log-deltaLBI</option>
+  <option value="date">date</option>
+  <option value="koel">Koel genotype</option>
 </select> 
 </p>
-<p></p>
 <p>
-Node sizing:
- <select id = "nNodeSizing">
-  <option value="date">Date</option>
-  <option value="LBI">LBI</option>
+Node size:
+</p><p>
+<select id = "nNodeSizing">
+  <option selected="selected" value="LBI">LBI</option>
   <option value="delta_LBI">deltaLBI</option>
   <option value="LBI_log">log-LBI</option>
   <option value="delta_LBI_log">log-deltaLBI</option>

@@ -76,15 +76,101 @@ function setFrequencies(node) {
     }
 }
 
+function calcBranchLength(node){
+    if (typeof node.children != "undefined") {
+	for (var i=0, c=node.children.length; i<c; i++) {
+	    calcBranchLength(node.children[i]);
+	    node.children[i].branch_length = node.children[i].xvalue-node.xvalue;
+	}
+    }
+};
+
 function setNodeAlive(node){
     if (typeof node.children != "undefined") {
 	for (var i=0, c=node.children.length; i<c; i++) {
 	    setNodeAlive(node.children[i]);
 	}
     }
-    node.alive = (node.date<dateCutoff)?true:false;
+    node.alive = (node.dateval<dateCutoff)?true:false;
 };
-    
+
+function calcUpPolarizers(node){
+    node.up_polarizer = 0;
+    if (node.alive){
+	if (typeof node.children != "undefined") {
+	    for (var i=0; i<node.children.length; i++) {
+		calcUpPolarizers(node.children[i]);
+		node.up_polarizer += node.children[i].up_polarizer;
+	    }
+	}
+        bl =  node.branch_length/LBItau;
+        node.up_polarizer *= Math.exp(-bl);
+        node.up_polarizer += LBItau*(1-Math.exp(-bl));
+    }
+};    
+
+function calcDownPolarizers(node){
+    if (typeof node.children != "undefined") {
+	for (var i1=0; i1<node.children.length; i1++) {
+	    if (node.children[i1].alive){
+		node.children[i1].down_polarizer = node.down_polarizer;
+		for (var i2=0; i2<node.children.length; i2++) {
+		    if (i1!=i2){
+			node.children[i1].down_polarizer += node.children[i2].up_polarizer;
+		    }
+		}
+		bl =  node.children[i1].branch_length/LBItau;
+		node.children[i1].down_polarizer *= Math.exp(-bl);
+		node.children[i1].down_polarizer += LBItau*(1-Math.exp(-bl));
+		calcDownPolarizers(node.children[i1]);
+	    }else{node.children[i1].down_polarizer=0;}
+	}
+    }
+};
+
+function calcPolarizers(node){
+    calcUpPolarizers(node);
+    node.down_polarizer = 0;
+    calcDownPolarizers(node);    
+};
+
+function calcLBI(node, allnodes){
+    console.log("Calculating LBI for date cutoff "+dateCutoff);
+    calcPolarizers(node);
+    allnodes.forEach(function (d) {
+	d.LBI=0;
+	if (d.alive){
+	    d.LBI+=d.down_polarizer;
+	    if (typeof d.children != "undefined") {
+		for (var i=0; i<d.children.length; i++) {
+		    d.LBI += d.children[i].up_polarizer;
+		}
+	    }
+	}
+    });
+};
+
+function calc_deltaLBI(node, allnodes, logdelta){
+    console.log("Calculating deltaLBI for date cutoff "+dateCutoff);
+    dateCutoff.setDate(dateCutoff.getDate()-deltaLBI_boundary_layer);
+    setNodeAlive(node);
+    calcLBI(node, allnodes);
+    allnodes.forEach(function (d){d.delta_LBI = -d.LBI;});
+    dateCutoff.setDate(dateCutoff.getDate()+deltaLBI_boundary_layer);
+    setNodeAlive(node);
+    calcLBI(node, allnodes);
+    allnodes.forEach(function (d){
+	if (logdelta) {d.delta_LBI = d.LBI/(-d.delta_LBI+1e-10);}
+	else {d.delta_LBI += d.LBI;}
+    });    
+    maxLBI = d3.max(allnodes.map(function (d) {return d.LBI;}));
+    maxdeltaLBI = d3.max(allnodes.map(function (d) {return d.delta_LBI;}));
+    console.log("maximal LBI: "+maxLBI+", maximal deltaLBI: "+maxdeltaLBI);
+    allnodes.forEach(function (d){
+	d.delta_LBI /= maxdeltaLBI;
+	d.LBI /= maxLBI;
+    });    
+};
 
 
 /*
@@ -142,7 +228,8 @@ var size_scheme = "LBI"
 var globalDate = new Date();
 var dateCutoff = globalDate;
 var ymd_format = d3.time.format("%Y-%m-%d");		
-
+var LBItau = 0.001
+var deltaLBI_boundary_layer = 180;
 var tree = d3.layout.tree()
 	.size([height, width]);
 
@@ -230,13 +317,17 @@ d3.json("20150102_tree_LBI.json", function(error, root) {
 //d3.json("https://s3.amazonaws.com/augur-data/data/auspice.json", function(error, root) {
 //d3.json("auspice.json", function(error, root) {
     var nodes = tree.nodes(root), links = tree.links(nodes);
-    
+    var koelGTs = d3.set(nodes.map(function (d) {return d.koel;})).values();
+    console.log(koelGTs);
     var rootNode = nodes[0];
     var tips = gatherTips(rootNode, []);
     var internals = gatherInternals(rootNode, []);
+    calcBranchLength(rootNode);
+    rootNode.branch_length= 0.01;
     setFrequencies(rootNode);
     setDates(internals);
-    setNodeAlive(rootNode);
+    nodes.forEach(function (d) {d.dateval = new Date(d.date)});
+    calc_deltaLBI(rootNode, nodes, false);
 
     var vaccines = getVaccines(tips);	
     
@@ -275,6 +366,10 @@ d3.json("20150102_tree_LBI.json", function(error, root) {
 	.domain([earliestDate, globalDate])
 	.range([-100, 100])
 	.clamp([true]);
+
+    var dateSliderScale = d3.time.scale()
+	.domain([earliestDate, globalDate])
+	.range([0, 100]);
     
     var dateColorScale = d3.time.scale()
 	.domain([earliestDate, globalDate])
@@ -292,17 +387,21 @@ d3.json("20150102_tree_LBI.json", function(error, root) {
 	.domain([0.0, 0.33, 0.66, 1.0])
 	.range([0, 3.25, 2.5, 1.75, 1]);	
     
-    var LBIColorScaleLog = d3.scale.log()
-	.domain([1e-2, 1.0])
-	.range(["#000000", "#FF0000"]);
+    var LBIColorScaleLog = d3.scale.linear()
+	.domain([1e-2, 3.3e-2, 1e-1, 3.3e-1, 1.0])
+	.range(colorbrewer['RdYlBu'][5].reverse());
     
     var LBIColorScaleLinear = d3.scale.linear()
-	.domain([0, 1.0])
-	.range(["#000000", "#FF0000"]);
+	.domain([0, .2, .4, .6, .8, 1.0])
+	.range(colorbrewer['RdYlBu'][6].reverse());
     
-    var LBISizeScale = d3.scale.threshold()
+    var LBISizeScaleLinear = d3.scale.threshold()
 	.domain([0.0, 0.33, 0.66, 1.0])
-	.range([1, 1.5, 2, 2.5, 3]);	
+	.range([1, 2, 2.3, 2.7, 3]);	
+
+    var LBISizeScaleLog = d3.scale.log()
+	.domain([1e-2, 1.0])
+	.range([1, 3]);
     
     var recencyVaccineSizeScale = d3.scale.threshold()
 	.domain([0.0])
@@ -316,21 +415,32 @@ d3.json("20150102_tree_LBI.json", function(error, root) {
 	.domain([0, 1])
 	.range([1, 10]);
     
+    var KoelColorScale = d3.scale.category20()
+	.domain(koelGTs)
+
     function nodeSizing(d){
-	if (size_scheme=="LBI") return LBISizeScale(d.LBI); 
-	else if (size_scheme=="recency") return recencySizeScale(d.diff);
-	else if (size_scheme=="date") return 2;
-	else if (size_scheme=="delta_LBI") return recencySizeScale(d.delta_LBI);
+	if (d.alive){
+	    if (size_scheme=="LBI") return LBISizeScaleLinear(d.LBI); 
+	    else if (size_scheme=="recency") return recencySizeScale(d.diff);
+	    else if (size_scheme=="delta_LBI") return LBISizeScaleLinear(d.delta_LBI);
+	    else if (size_scheme=="LBI_log") return LBISizeScaleLog(d.LBI);
+	    else if (size_scheme=="delta_LBI_log") return LBISizeScaleLog(d.delta_LBI);
+	}else{ return 1;}
     };
 
     function nodeColoring(d) { 
-	if (color_scheme=="LBI_log") col = LBIColorScaleLog(d.LBI); 
-	else if (color_scheme=="LBI") col = LBIColorScaleLinear(d.LBI); 
-	else if (color_scheme=="recency") col = recencyColorScale(d.diff);
-	else if (color_scheme=="date") col = dateColorScale(d.date);
-	else if (color_scheme=="delta_LBI") col = LBIColorScale(d.delta_LBI);
-	else if (color_scheme=="delta_LBI_log") col = LBIColorScaleLog(d.delta_LBI);
-	return d3.rgb(col).brighter([0.7]).toString();
+	if (d.alive){
+	    if (color_scheme=="LBI_log") col = LBIColorScaleLog(d.LBI); 
+	    else if (color_scheme=="LBI") col = LBIColorScaleLinear(d.LBI); 
+	    else if (color_scheme=="recency") col = recencyColorScale(d.diff);
+	    else if (color_scheme=="date") col = dateColorScale(d.dateval);
+	    else if (color_scheme=="delta_LBI") col = LBIColorScaleLinear(d.delta_LBI);
+	    else if (color_scheme=="delta_LBI_log") col = LBIColorScaleLog(d.delta_LBI);
+	    else if (color_scheme=="koel") col = KoelColorScale(d.koel);
+	    return d3.rgb(col).brighter([0.7]).toString();
+	}else{
+	    return "#AAAAAA"
+	}
     };
 
     nodes.forEach(function (d) {
@@ -389,7 +499,7 @@ d3.json("20150102_tree_LBI.json", function(error, root) {
 	.style("stroke", function(d){return nodeColoring(d);})
 	.on('mouseover', function(d) {
 	    tooltip.show(d, this);
-	})		
+	})
       	.on('mouseout', tooltip.hide);
     
     function tipCirclesUpdate(){
@@ -508,12 +618,13 @@ d3.json("20150102_tree_LBI.json", function(error, root) {
 	.onSelected(onSelect)
 	.render();	
     
-    d3.select("#nDateCutoff").on("input", function(){
-	console.log(earliestDate);
-	console.log(globalDate);
-	console.log(+this.value);
-	console.log(dateValues.length);
-	console.log(dateScale(+this.value));
+    d3.select("#nDateCutoff-value").text(ymd_format(dateCutoff));
+    d3.select("#nDateCutoff").on("change", function(){
+	dateCutoff = dateSliderScale.invert(+this.value);
+	d3.select("#nDateCutoff-value").text(ymd_format(dateCutoff));
+	console.log("changing date Cutoff to:" +dateCutoff);
+	calc_deltaLBI(rootNode, nodes, false);
+	tipCirclesUpdate();
     });
 
     d3.select("#nNodeColoring").on("change", function(){
@@ -538,6 +649,5 @@ d3.json("20150102_tree_LBI.json", function(error, root) {
               .orient("top"))
         .select(".domain")
         .select(function() { return this.parentNode.appendChild(this.cloneNode(true)); })
-        .attr("class", "halo");
-		
+        .attr("class", "halo");		
 });
