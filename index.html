@@ -62,6 +62,41 @@
 		<script src="js/d3.tip.js"></script>	
 		<script src="js/autocomplete.js"></script>	
 		<script src="js/auspice.js"></script>				
-	</body>
+		<script src="js/miniscroll.js"></script>
+
+<div class="scroller">
+  "age"
+</div>
+ <a href="#" id="teste">scrollTo(50)</a>
+<script src="../dist/miniscroll.js"></script>
+<script>
+var mini = new Miniscroll("#mini", {
+axis: "y",
+size: 10,
+sizethumb: "auto"
+});
+if (window.addEventListener) {
+document.getElementById("teste").addEventListener("click", onMove, false);
+} else if (window.attachEvent) {
+document.getElementById("teste").attachEvent("onclick", onMove);
+}
+function onMove(event) {
+event.returnValue = false;
+if(event.preventDefault) {
+event.preventDefault();
+}
+mini.scrollTo(50);
+}
+</script>
+
+Node coloring:
+ <select>
+  <option value="date">Date</option>
+  <option value="LBI">LBI</option>
+  <option value="deltaLBI">deltaLBI</option>
+  <option value="log-LBI">log-LBI</option>
+  <option value="log-deltaLBI">log-deltaLBI</option>
+</select> 
+</body>
 
 </html>

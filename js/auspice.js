@@ -120,6 +120,9 @@ function maximumAttribute(node, attr, max) {
 
 var width = 800,
 	height = 600;
+
+var color_scheme = "delta_LBI_log"
+var size_scheme = "LBI"
 	
 var globalDate = new Date();
 var ymd_format = d3.time.format("%Y-%m-%d");		
@@ -208,7 +211,8 @@ function rescale(dMin, dMax, lMin, lMax, xScale, yScale, nodes, links, tips, int
 		
 }
 
-d3.json("https://s3.amazonaws.com/augur-data/data/auspice.json", function(error, root) {
+d3.json("20150102_tree_LBI.json", function(error, root) {
+//d3.json("https://s3.amazonaws.com/augur-data/data/auspice.json", function(error, root) {
 //d3.json("auspice.json", function(error, root) {
 	var nodes = tree.nodes(root),
 		links = tree.links(nodes);
@@ -255,6 +259,10 @@ d3.json("https://s3.amazonaws.com/augur-data/data/auspice.json", function(error,
 		.domain([earliestDate, globalDate])
 		.range([-100, 100])
 		.clamp([true]);
+
+	var dateColorScale = d3.time.scale()
+		.domain([earliestDate, globalDate])
+		.range(["#000000","#FF0000"]);
 		
 	var yearScale = d3.scale.ordinal()
 		.domain([2014, "undefined", 2011, 2012, 2013])
@@ -267,6 +275,18 @@ d3.json("https://s3.amazonaws.com/augur-data/data/auspice.json", function(error,
 	var recencySizeScale = d3.scale.threshold()
 		.domain([0.0, 0.33, 0.66, 1.0])
 		.range([0, 3.25, 2.5, 1.75, 1]);	
+
+	var LBIColorScaleLog = d3.scale.log()
+		.domain([1e-2, 1.0])
+		.range(["#000000", "#FF0000"]);
+
+	var LBIColorScaleLinear = d3.scale.linear()
+		.domain([0, 1.0])
+		.range(["#000000", "#FF0000"]);
+		
+	var LBISizeScale = d3.scale.threshold()
+		.domain([0.0, 0.33, 0.66, 1.0])
+		.range([1, 1.5, 2, 2.5, 3]);	
 		
 	var recencyVaccineSizeScale = d3.scale.threshold()
 		.domain([0.0])
@@ -332,15 +352,28 @@ d3.json("https://s3.amazonaws.com/augur-data/data/auspice.json", function(error,
 		.attr("cx", function(d) { return d.x; })
 		.attr("cy", function(d) { return d.y; })
 		.attr("r", function(d) {
-			return recencySizeScale(d.diff);
+		    if (size_scheme=="LBI") return LBISizeScale(d.LBI); 
+		    else if (size_scheme=="recency") return recencySizeScale(d.diff);
+		    else if (size_scheme=="date") return 2;
+		    else if (size_scheme=="delta_LBI") return recencySizeScale(d.delta_LBI);
 		})			
 		.style("fill", function(d) { 
-			var col = recencyColorScale(d.diff);
-			return d3.rgb(col).brighter([0.7]).toString();	
+		    if (color_scheme=="LBI_log") col = LBIColorScaleLog(d.LBI); 
+		    else if (color_scheme=="LBI") col = LBIColorScaleLinear(d.LBI); 
+		    else if (color_scheme=="recency") col = recencyColorScale(d.diff);
+		    else if (color_scheme=="date") col = dateColorScale(d.date);
+		    else if (color_scheme=="delta_LBI") col = LBIColorScale(d.delta_LBI);
+		    else if (color_scheme=="delta_LBI_log") col = LBIColorScaleLog(d.delta_LBI);
+		    return d3.rgb(col).brighter([0.7]).toString();	
 		})	
 		.style("stroke", function(d) { 
-			var col = recencyColorScale(d.diff);
-			return d3.rgb(col).toString();	
+		    if (color_scheme=="LBI_log") col = LBIColorScaleLog(d.LBI); 
+		    else if (color_scheme=="LBI") col = LBIColorScaleLinear(d.LBI); 
+		    else if (color_scheme=="recency") col = recencyColorScale(d.diff);
+		    else if (color_scheme=="date") col = dateColorScale(d.date);
+		    else if (color_scheme=="delta_LBI") col = LBIColorScale(d.delta_LBI);
+		    else if (color_scheme=="delta_LBI_log") col = LBIColorScaleLog(d.delta_LBI);
+		    return d3.rgb(col).toString();	
 		})					
 		.on('mouseover', function(d) {
 			tooltip.show(d, this);
@@ -456,5 +489,16 @@ d3.json("https://s3.amazonaws.com/augur-data/data/auspice.json", function(error,
 		.height(500)
 		.onSelected(onSelect)
 		.render();	
+
+
+    d3.selectAll().append("g")
+        .attr("class", "x axis")
+        .attr("transform", "translate(0," + (-200 - 1.5 * 50 - 20) + ")")
+        .call(d3.svg.axis()
+              .scale(xTSlider)
+              .orient("top"))
+        .select(".domain")
+        .select(function() { return this.parentNode.appendChild(this.cloneNode(true)); })
+        .attr("class", "halo");
 		
 });
