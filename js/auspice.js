@@ -313,7 +313,8 @@ function rescale(dMin, dMax, lMin, lMax, xScale, yScale, nodes, links, tips, int
 	});	   		   
 }
 
-d3.json("20150102_tree_LBI.json", function(error, root) {
+//d3.json("20150102_tree_LBI.json", function(error, root) {
+d3.json("https://owncloud.tuebingen.mpg.de/public.php?service=files&t=81a760f4ad3bd0860315a7e3ecad9948", function(error, root){
 //d3.json("https://s3.amazonaws.com/augur-data/data/auspice.json", function(error, root) {
 //d3.json("auspice.json", function(error, root) {
     var nodes = tree.nodes(root), links = tree.links(nodes);
