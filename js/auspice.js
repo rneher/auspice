@@ -2,7 +2,6 @@ d3.select("body")
     .style("color", "black")
     .style("background-color", "white");
 
-
 function depthFirstSearch(node) {
     if (typeof node.children != "undefined") {
 	for (var i=0, c=node.children.length; i<c; i++) {
@@ -42,6 +41,28 @@ function setDates(internals) {
 	})
 	node.date = d3.min(dates);
     })
+}
+
+function rainbow(numOfSteps, step) {
+    // This function generates vibrant, "evenly spaced" colours (i.e. no clustering). 
+    // This is ideal for creating easily distinguishable vibrant markers in Google Maps and other apps.
+    // Adam Cole, 2011-Sept-14
+    // HSV to RBG adapted from: http://mjijackson.com/2008/02/rgb-to-hsl-and-rgb-to-hsv-color-model-conversion-algorithms-in-javascript
+    var r, g, b;
+    var h = step / numOfSteps;
+    var i = ~~(h * 6);
+    var f = h * 6 - i;
+    var q = 1 - f;
+    switch(i % 6){
+        case 0: r = 1, g = f, b = 0; break;
+        case 1: r = q, g = 1, b = 0; break;
+        case 2: r = 0, g = 1, b = f; break;
+        case 3: r = 0, g = q, b = 1; break;
+        case 4: r = f, g = 0, b = 1; break;
+        case 5: r = 1, g = 0, b = q; break;
+    }
+    var c = "#" + ("00" + (~ ~(r * 255)).toString(16)).slice(-2) + ("00" + (~ ~(g * 255)).toString(16)).slice(-2) + ("00" + (~ ~(b * 255)).toString(16)).slice(-2);
+    return (c);
 }
 
 function getVaccines(tips) {
@@ -223,8 +244,15 @@ function maximumAttribute(node, attr, max) {
 var width = 800,
 	height = 600;
 
-var color_scheme = "delta_LBI_log"
-var size_scheme = "LBI"	
+var e = document.getElementById("nNodeColoring");
+var color_scheme = e.options[e.selectedIndex].value;
+
+var e = document.getElementById("nLinkColoring");
+var link_color_scheme = e.options[e.selectedIndex].value;
+
+var e = document.getElementById("nNodeSizing");
+var size_scheme = e.options[e.selectedIndex].value;
+
 var globalDate = new Date();
 var dateCutoff = globalDate;
 var ymd_format = d3.time.format("%Y-%m-%d");		
@@ -264,7 +292,8 @@ var tooltip = d3.tip()
 treeplot.call(tooltip);		
 
 function rescale(dMin, dMax, lMin, lMax, xScale, yScale, nodes, links, tips, internals, vaccines) {
-    
+    var scale_factor = (yScale.domain()[1]-yScale.domain()[0])/(lMax-lMin);
+    console.log("rescale by "+scale_factor);
     var speed = 1500;
     xScale.domain([dMin,dMax]);
     yScale.domain([lMin,lMax]);
@@ -278,6 +307,7 @@ function rescale(dMin, dMax, lMin, lMax, xScale, yScale, nodes, links, tips, int
     	.transition().duration(speed)
     	.attr("cx", function(d) { return d.x; })
     	.attr("cy", function(d) { return d.y; });
+    	//.attr("r", function(d) { return scale_factor*this.attr("r"); });
     
     treeplot.selectAll(".vaccine").data(vaccines)
     	.transition().duration(speed)
@@ -313,13 +343,22 @@ function rescale(dMin, dMax, lMin, lMax, xScale, yScale, nodes, links, tips, int
 	});	   		   
 }
 
-d3.json("20150102_tree_LBI.json", function(error, root) {
-//d3.json("https://owncloud.tuebingen.mpg.de/public.php?service=files&t=81a760f4ad3bd0860315a7e3ecad9948", function(error, root){
-//d3.json("https://s3.amazonaws.com/augur-data/data/auspice.json", function(error, root) {
-//d3.json("auspice.json", function(error, root) {
+var e = document.getElementById("nTreeFile");
+var tree_file = e.options[e.selectedIndex].value;
+
+d3.json(tree_file, function(error, root) {
     var nodes = tree.nodes(root), links = tree.links(nodes);
     var koelGTs = d3.set(nodes.map(function (d) {return d.koel;})).values();
-    console.log(koelGTs);
+    koelGTs = koelGTs.filter(function (d) {return d.indexOf('X')==-1;});
+    var koelGT_counts = {}
+    for (var i=0; i<koelGTs.length; i++) koelGT_counts[koelGTs[i]]=0;
+    nodes.forEach(function (d) {koelGT_counts[d.koel]+=1;});
+    for (var i=0; i<koelGTs.length; i++) {
+	console.log(koelGTs[i]+": "+koelGT_counts[koelGTs[i]]);
+    }
+    koelGTs = koelGTs.filter(function (d) {return koelGT_counts[d]>1;});
+    console.log("Koel genotypes passed filtering:"+koelGTs);
+
     var rootNode = nodes[0];
     var tips = gatherTips(rootNode, []);
     var internals = gatherInternals(rootNode, []);
@@ -388,13 +427,22 @@ d3.json("20150102_tree_LBI.json", function(error, root) {
 	.domain([0.0, 0.33, 0.66, 1.0])
 	.range([0, 3.25, 2.5, 1.75, 1]);	
     
+    //if (colorbrewer!="undefined"){
+    try{
+	cmap5 = colorbrewer['RdYlBu'][5].reverse();
+	cmap6 = colorbrewer['RdYlBu'][6].reverse();
+    }catch (e) {
+	console.log("colorbrewer not available");
+	cmap5 = ['#000000', '#FF0000']
+	cmap6 = ['#000000', '#FF0000']
+    }
     var LBIColorScaleLog = d3.scale.linear()
 	.domain([1e-2, 3.3e-2, 1e-1, 3.3e-1, 1.0])
-	.range(colorbrewer['RdYlBu'][5].reverse());
+	.range(cmap5);
     
     var LBIColorScaleLinear = d3.scale.linear()
 	.domain([0, .2, .4, .6, .8, 1.0])
-	.range(colorbrewer['RdYlBu'][6].reverse());
+	.range(cmap6);
     
     var LBISizeScaleLinear = d3.scale.threshold()
 	.domain([0.0, 0.33, 0.66, 1.0])
@@ -415,10 +463,23 @@ d3.json("20150102_tree_LBI.json", function(error, root) {
     var freqScale = d3.scale.sqrt()
 	.domain([0, 1])
 	.range([1, 10]);
-    
-    var KoelColorScale = d3.scale.category20()
-	.domain(koelGTs)
 
+    //+ Jonas Raoni Soares Silva
+    //@ http://jsfromhell.com/array/shuffle [v1.0]
+    function shuffle(o){ //v1.0
+	for(var j, x, i = o.length; i; j = Math.floor(Math.random() * i), x = o[--i], o[i] = o[j], o[j] = x);
+	return o;
+    };
+    koelGTs_range = []
+    for (var i=1; i<koelGTs.length+1; i++) {
+	koelGTs_range.push(rainbow(koelGTs.length+1, i));
+    }
+    koelGTs_range = shuffle(koelGTs_range);
+    var KoelColorScale = d3.scale.ordinal()
+	.domain(koelGTs)
+	.range(koelGTs_range);
+
+    
     function nodeSizing(d){
 	if (d.alive){
 	    if (size_scheme=="LBI") return LBISizeScaleLinear(d.LBI); 
@@ -438,6 +499,23 @@ d3.json("20150102_tree_LBI.json", function(error, root) {
 	    else if (color_scheme=="delta_LBI") col = LBIColorScaleLinear(d.delta_LBI);
 	    else if (color_scheme=="delta_LBI_log") col = LBIColorScaleLog(d.delta_LBI);
 	    else if (color_scheme=="koel") col = KoelColorScale(d.koel);
+	    //return d3.rgb(col).brighter([0.7]).toString();
+	    return d3.rgb(col).toString();
+	}else{
+	    return "#AAAAAA"
+	}
+    };
+
+    function linkColoring(d) { 
+	if (d.target.alive){
+	    if (link_color_scheme=="LBI_log") col = LBIColorScaleLog(d.target.LBI); 
+	    else if (link_color_scheme=="LBI") col = LBIColorScaleLinear(d.target.LBI); 
+	    else if (link_color_scheme=="recency") col = recencyColorScale(d.target.diff);
+	    else if (link_color_scheme=="date") col = dateColorScale(d.target.dateval);
+	    else if (link_color_scheme=="delta_LBI") col = LBIColorScaleLinear(d.target.delta_LBI);
+	    else if (link_color_scheme=="delta_LBI_log") col = LBIColorScaleLog(d.target.delta_LBI);
+	    else if (link_color_scheme=="koel") col = KoelColorScale(d.target.koel);
+	    else if (link_color_scheme=="None") col = '#AAAAAA';
 	    //return d3.rgb(col).brighter([0.7]).toString();
 	    return d3.rgb(col).toString();
 	}else{
@@ -472,6 +550,7 @@ d3.json("20150102_tree_LBI.json", function(error, root) {
 		+ (d.target.x).toString() + "," + d.target.y.toString()
 	})
 	.style("stroke-width", 2)   
+	.style("stroke", function(d){return linkColoring(d);})
     	.style("cursor", "pointer")		 
      	.on('click', function(d) { 
       	    var dMin = minimumAttribute(d.target, "xvalue", d.target.xvalue),
@@ -480,7 +559,33 @@ d3.json("20150102_tree_LBI.json", function(error, root) {
       	    lMax = maximumAttribute(d.target, "yvalue", d.target.yvalue);
       	    rescale(dMin, dMax, lMin, lMax, xScale, yScale, nodes, links, tips, internals, vaccines);
       	}); 
-    
+
+    var legendRectSize = 18;
+    var legendSpacing = 4;
+    var koelLegend = treeplot.selectAll(".legend")
+	.data(koelGTs)
+	.enter().append('g')
+	.attr('class', 'legend')
+	.attr('transform', function(d, i) {
+	    var height = legendRectSize + legendSpacing;
+	    var offset =  -100; 
+	    var horz = 2 * legendRectSize;
+	    var vert = i * height - offset;
+	    return 'translate(' + horz + ',' + vert + ')';
+	});
+
+
+    koelLegend.append('rect')
+	.attr('width', legendRectSize)
+	.attr('height', legendRectSize)
+	.style('fill', function (d) {return KoelColorScale(d);})
+	.style('stroke', function (d) {return KoelColorScale(d);});
+
+    koelLegend.append('text')
+	.attr('x', legendRectSize + legendSpacing)
+	.attr('y', legendRectSize - legendSpacing)
+	.text(function(d) {return d+" #:"+koelGT_counts[d]; });
+
     tips.forEach(function (d) {
 	var date = new Date(d.date);		
 	var oneYear = 365.25*24*60*60*1000; // days*hours*minutes*seconds*milliseconds
@@ -511,6 +616,12 @@ d3.json("20150102_tree_LBI.json", function(error, root) {
 	    .style("stroke", function(d){return nodeColoring(d);})
 	    .attr("r", function(d) { return nodeSizing(d);})
     };
+
+    function linkUpdate(){
+    	treeplot.selectAll(".link")
+	    .style("stroke", function(d){return linkColoring(d);})
+    };
+
 
     var vaccineCircles = treeplot.selectAll(".vaccine")
 	.data(vaccines)
@@ -628,6 +739,11 @@ d3.json("20150102_tree_LBI.json", function(error, root) {
 	console.log("changing date Cutoff to:" +dateCutoff);
 	calc_deltaLBI(rootNode, nodes, false);
 	tipCirclesUpdate();
+	linkUpdate();
+    });
+    d3.select("#nDateCutoff").on("input", function(){
+	dateCutoff = dateSliderScale.invert(+this.value);
+	d3.select("#nDateCutoff-value").text(ymd_format(dateCutoff));
     });
 
     d3.select("#nBoundaryLayer-value").text(deltaLBI_boundary_layer);
@@ -653,6 +769,13 @@ d3.json("20150102_tree_LBI.json", function(error, root) {
 	color_scheme=d3.select(this).property('value');
 	console.log(color_scheme);
 	tipCirclesUpdate();
+    });
+
+    d3.select("#nLinkColoring").on("change", function(){
+	console.log("change link coloring to");
+	link_color_scheme=d3.select(this).property('value');
+	console.log(color_scheme);
+	linkUpdate();
     });
 
     d3.select("#nNodeSizing").on("change", function(){

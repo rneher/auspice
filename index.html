@@ -1,120 +1,142 @@
 <!DOCTYPE html>
 <html lang="en">
-
-	<head>					
-		<script src="js/d3.min.js"></script>
-		<link rel="stylesheet" href="autocomplete.css"/>
-		<style>
-
-		.node circle {
-		  fill: #fff;
-		  stroke: steelblue;
-		  stroke-width: 1.5px;
-		}
-
-		.node {
-		  font: 10px sans-serif;
-		}
-		
-		.link {
-		  fill: none;
-		  stroke: #ccc;
-		  stroke-width: 1.5px;
-		}				
-		
-		.d3-tip {
-		  font: 14px "Helvetica Neue", Helvetica, Arial, sans-serif;
-		  line-height: 1;
-		  font-weight: bold;
-		  padding: 7px;
-		  background: rgba(0, 0, 0, 0.55);
-		  color: #fff;
+  
+  <head>					
+    <script src="js/d3.min.js"></script>
+    <link rel="stylesheet" href="autocomplete.css"/>
+    <style>
+      
+      .node circle {
+      fill: #fff;
+      stroke: steelblue;
+      stroke-width: 1.5px;
+      }
+      
+      .node {
+      font: 10px sans-serif;
+      }
+      
+      .link {
+      fill: none;
+      stroke: #ccc;
+      stroke-width: 1.5px;
+      }				
+      
+      .d3-tip {
+      font: 14px "Helvetica Neue", Helvetica, Arial, sans-serif;
+      line-height: 1;
+      font-weight: bold;
+      padding: 7px;
+      background: rgba(0, 0, 0, 0.55);
+      color: #fff;
 		  border-radius: 14px;
-		}
-		
-		.counter-text {
-		  font: 32px "Helvetica Neue", Helvetica, Arial, sans-serif;
-		  font-weight: 700;
-		  fill: #ccc;
-		}
-		
-		body {
-			font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-		}
+      }
+      
+      .counter-text {
+      font: 32px "Helvetica Neue", Helvetica, Arial, sans-serif;
+      font-weight: 700;
+      fill: #ccc;
+      }
+      
+      .legend {
+      font-size: 12px;
+      }
+      rect {
+      stroke-width: 2;
+      }
+      text {
+      font-size: 12px;
+      }
 
-		</style>		
-	</head>
+      body {
+      font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+      }
 
-	<body>
-	
-		 <div style="width:800px; margin:0 auto;">
-	 
- 			<svg id="treeplot"></svg> 
-			<p>	
-			 <div style="width:200px;" class="container">
-				<div id="search" type="search"></div>
-			</div>
-			<button id="reset" style="float:right;">reset</button>
-					
-			
-    	</div>
-		 
-		 <script src="https://raw.githubusercontent.com/mbostock/d3/master/lib/colorbrewer/colorbrewer.js"></script>				
-		 <script src="js/d3.tip.js"></script>	
-		 <script src="js/autocomplete.js"></script>	
-		 <script src="js/auspice.js"></script>			
-
-
-<hr>
-
-<p>
-  <label for="nDateCutoff" 
-         style="display: inline-block; width: 180px; text-align: left">
-         Date cutoff = <span id="nDateCutoff-value">…</span>
-  </label>
-</p><p>
-  <input type="range" min="0" max="100" value="100" step="10" id="nDateCutoff">
-</p>
-<p>
-  <label for="nBoundaryLayer" 
-         style="display: inline-block; width: 180px; text-align: left">
-         deltaLBI from = <span id="nBoundaryLayer-value">…</span> days
-  </label>
-</p><p>
-  <input type="range" min="10" max="600" value="100" step="10" id="nBoundaryLayer">
-</p>
-<p>
-  <label for="nLBItau" 
-         style="display: inline-block; width: 180px; text-align: left">
-         LBI time scale = <span id="nLBItau-value">…</span>
-  </label>
-</p><p>
-  <input type="range" min="0.0001" max="0.002" value="0.0005" step="0.0001" id="nLBItau">
-</p>
-<p>
-Node color:
-</p><p>
-<select id = "nNodeColoring">
-  <option value="LBI">LBI</option>
-  <option value="delta_LBI">deltaLBI</option>
-  <option value="LBI_log">log-LBI</option>
-  <option selected="selected" value="delta_LBI_log">log-deltaLBI</option>
-  <option value="date">date</option>
-  <option value="koel">Koel genotype</option>
-</select> 
-</p>
-<p>
-Node size:
-</p><p>
-<select id = "nNodeSizing">
-  <option selected="selected" value="LBI">LBI</option>
-  <option value="delta_LBI">deltaLBI</option>
-  <option value="LBI_log">log-LBI</option>
-  <option value="delta_LBI_log">log-deltaLBI</option>
-</select> 
-</p>
-<p>
-
-</body>
-
+    </style>		
+  </head>
+  
+  <body>
+    Tree file (reload to take effect):
+    <p>
+      <select id = "nTreeFile">
+	<option value="20150105_tree_3y.json">20150105_tree_3y.json</option>
+	<option value="20150105_tree_5y.json">20150105_tree_5y.json</option>
+	<option value="20150105_tree_10y.json">20150105_tree_10y.json</option>
+	<option value="20150105_tree_20y.json">20150105_tree_20y.json</option>
+      </select> 
+    </p>
+    <hr>
+    Node color:
+    <select id = "nNodeColoring">
+      <option value="LBI">LBI</option>
+      <option value="delta_LBI">deltaLBI</option>
+      <option value="LBI_log">log-LBI</option>
+      <option selected="selected" value="delta_LBI_log">log-deltaLBI</option>
+      <option value="date">date</option>
+      <option value="koel">Koel genotype</option>
+    </select> 
+    
+    Node size:
+    <select id = "nNodeSizing">
+      <option selected="selected" value="LBI">LBI</option>
+      <option value="delta_LBI">deltaLBI</option>
+      <option value="LBI_log">log-LBI</option>
+      <option value="delta_LBI_log">log-deltaLBI</option>
+    </select> 
+    
+    Link color:
+    <select id = "nLinkColoring">
+      <option value="LBI">LBI</option>
+      <option value="delta_LBI">deltaLBI</option>
+      <option value="LBI_log">log-LBI</option>
+      <option value="delta_LBI_log">log-deltaLBI</option>
+      <option value="date">date</option>
+      <option selected="selected"  value="None">None</option>
+      <option selected="selected"  value="koel">Koel genotype</option>
+    </select> 
+    <hr>
+    
+    <div style="width:800px; margin:0 auto;">
+      
+      <svg id="treeplot"></svg> 
+      <p>	
+	<div style="width:200px;" class="container">
+	  <div id="search" type="search"></div>
+	</div>
+	<button id="reset" style="float:right;">reset</button>    
+    </div>
+    
+    <script src="https://raw.githubusercontent.com/mbostock/d3/master/lib/colorbrewer/colorbrewer.js"></script>	
+    <script src="js/d3.tip.js"></script>	
+    <script src="js/autocomplete.js"></script>	
+    <script src="js/auspice.js"></script>			
+    
+    <hr>
+    
+    <p>
+      <label for="nDateCutoff" 
+             style="display: inline-block; width: 180px; text-align: left">
+        Date cutoff = <span id="nDateCutoff-value">…</span>
+      </label>
+    </p><p>
+      <input type="range" min="0" max="100" value="100" id="nDateCutoff">
+    </p>
+    <p>
+      <label for="nBoundaryLayer" 
+             style="display: inline-block; width: 180px; text-align: left">
+        deltaLBI from = <span id="nBoundaryLayer-value">…</span> days
+      </label>
+    </p><p>
+      <input type="range" min="10" max="600" value="100" step="10" id="nBoundaryLayer">
+    </p>
+    <p>
+      <label for="nLBItau" 
+             style="display: inline-block; width: 180px; text-align: left">
+        LBI time scale = <span id="nLBItau-value">…</span>
+      </label>
+    </p><p>
+      <input type="range" min="0.0001" max="0.002" value="0.0005" step="0.0001" id="nLBItau">
+    </p>
+    <p>
+  </body>
 </html>
