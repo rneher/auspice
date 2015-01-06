@@ -2,6 +2,7 @@
 <html lang="en">
   
   <head>					
+    <meta charset="utf-8">
     <script src="js/d3.min.js"></script>
     <link rel="stylesheet" href="autocomplete.css"/>
     <style>
@@ -47,6 +48,15 @@
       text {
       font-size: 12px;
       }
+      .legend2 {
+      font-size: 12px;
+      }
+      rect {
+      stroke-width: 2;
+      }
+      text {
+      font-size: 12px;
+      }
 
       body {
       font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
@@ -59,40 +69,40 @@
     Tree file (reload to take effect):
     <p>
       <select id = "nTreeFile">
-	<option value="20150105_tree_3y.json">20150105_tree_3y.json</option>
-	<option value="20150105_tree_5y.json">20150105_tree_5y.json</option>
-	<option value="20150105_tree_10y.json">20150105_tree_10y.json</option>
-	<option value="20150105_tree_20y.json">20150105_tree_20y.json</option>
+	<option value="https://s3.amazonaws.com/augur-data/data/auspice.json">Trevor AWS</option>
+	<option value="data/20150105_tree_3y.json">20150105_tree_3y.json</option>
+	<option value="data/20150105_tree_5y.json">20150105_tree_5y.json</option>
+	<option value="data/20150105_tree_10y.json">20150105_tree_10y.json</option>
+	<option value="data/20150105_tree_20y.json">20150105_tree_20y.json</option>
       </select> 
     </p>
     <hr>
     Node color:
     <select id = "nNodeColoring">
-      <option value="LBI">LBI</option>
-      <option value="delta_LBI">deltaLBI</option>
-      <option value="LBI_log">log-LBI</option>
-      <option selected="selected" value="delta_LBI_log">log-deltaLBI</option>
+      <option selected="selected" value="delta_LBI_log">LBI</option>
+      <option value="LBI_log">global LBI</option>
       <option value="date">date</option>
       <option value="koel">Koel genotype</option>
+      <option value="region">Geographic region</option>
     </select> 
     
     Node size:
     <select id = "nNodeSizing">
-      <option selected="selected" value="LBI">LBI</option>
-      <option value="delta_LBI">deltaLBI</option>
-      <option value="LBI_log">log-LBI</option>
-      <option value="delta_LBI_log">log-deltaLBI</option>
+      <option value = "1" >1<options> 
+      <option selected="selected" value = "2" >2<options> 
+      <option value = "4" >4<options> 
+      <option value="LBI_log">global LBI</option>
+      <option value="delta_LBI_log">LBI</option>
     </select> 
     
     Link color:
     <select id = "nLinkColoring">
-      <option value="LBI">LBI</option>
-      <option value="delta_LBI">deltaLBI</option>
-      <option value="LBI_log">log-LBI</option>
-      <option value="delta_LBI_log">log-deltaLBI</option>
+      <option value="delta_LBI_log">LBI</option>
+      <option value="LBI_log">global LBI</option>
       <option value="date">date</option>
+      <option value="koel">Koel genotype</option>
+      <option value="region">Geographic region</option>
       <option selected="selected"  value="None">None</option>
-      <option selected="selected"  value="koel">Koel genotype</option>
     </select> 
     <hr>
     
@@ -100,7 +110,7 @@
       
       <div id="treeplot_div"></div> 
       <p>	
-	<div style="width:200px;" class="container">
+	<div style="width:200px;" class="container" id="search_outer">
 	  <div id="search" type="search"></div>
 	</div>
 	<button id="reset" style="float:right;">reset</button>    
@@ -115,27 +125,29 @@
     
     <p>
       <label for="nDateCutoff" 
-             style="display: inline-block; width: 180px; text-align: left">
+             style="display: inline-block; width: 600px; text-align: left">
         Date cutoff = <span id="nDateCutoff-value">…</span>
+	<i> --- nodes past this date will appear grey.</i>
       </label>
     </p><p>
       <input type="range" min="0" max="100" value="100" id="nDateCutoff">
     </p>
     <p>
       <label for="nBoundaryLayer" 
-             style="display: inline-block; width: 180px; text-align: left">
-        deltaLBI from = <span id="nBoundaryLayer-value">…</span> days
+             style="display: inline-block; width: 600px; text-align: left">
+        LBI time window = <span id="nBoundaryLayer-value">…</span> days
+	<i> --- use nodes within this interval rel. to date cutoff </i>
       </label>
     </p><p>
-      <input type="range" min="10" max="600" value="100" step="10" id="nBoundaryLayer">
+      <input type="range" min="10" max="600" value="200" step="10" id="nBoundaryLayer">
     </p>
     <p>
       <label for="nLBItau" 
-             style="display: inline-block; width: 180px; text-align: left">
-        LBI time scale = <span id="nLBItau-value">…</span>
+             style="display: inline-block; width: 600px; text-align: left">
+        &#964<sub>LBI</sub> = <span id="nLBItau-value">…</span> <i> --- time scale used to calculate the LBI. Values of about &#960/10 are useful.</i>
       </label>
     </p><p>
-      <input type="range" min="0.0001" max="0.002" value="0.0005" step="0.0001" id="nLBItau">
+      <input type="range" min="0.0001" max="0.002" value="0.0007" step="0.0001" id="nLBItau">
     </p>
     <p>
   </body>

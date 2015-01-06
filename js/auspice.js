@@ -97,6 +97,21 @@ function setFrequencies(node) {
     }
 }
 
+function calcGeoDistribution(node, regions){
+    node.geodis = {}
+    for (var i=0;i<regions.length; i++){node.geodis[regions[i]]=0;}
+    if (typeof node.children != "undefined") {
+	for (var i=0; i<node.children.length; i++) {
+	    calcGeoDistribution(node.children[i],regions);
+	    for (var j=0;j<regions.length; j++){
+		node.geodis[regions[j]]+=node.children[i].geodis[regions[j]];
+	    }
+	}
+    }else if (node.alive){
+	node.geodis[node.region]+=1;
+    }
+};
+
 function calcBranchLength(node){
     if (typeof node.children != "undefined") {
 	for (var i=0, c=node.children.length; i<c; i++) {
@@ -241,12 +256,16 @@ function maximumAttribute(node, attr, max) {
 	return max;
 }
 
+	
+var treeplot;
+var regions;
+var region_codes = {'north_america':'NA', 'south_america':'SA', 'europe':'EU','asia':'AS','oceania':'OC'} 
 var width = 800,
 	height = 600;
 
 var e = document.getElementById("nNodeColoring");
 var color_scheme = e.options[e.selectedIndex].value;
-
+var minkoel=10
 var e = document.getElementById("nLinkColoring");
 var link_color_scheme = e.options[e.selectedIndex].value;
 
@@ -256,8 +275,8 @@ var size_scheme = e.options[e.selectedIndex].value;
 var globalDate = new Date();
 var dateCutoff = globalDate;
 var ymd_format = d3.time.format("%Y-%m-%d");		
-var LBItau = 0.0005
-var deltaLBI_boundary_layer = 365;
+var LBItau = 0.0007
+var deltaLBI_boundary_layer = 200;
 var tree = d3.layout.tree()
 	.size([height, width]);
 
@@ -280,12 +299,26 @@ var tooltip = d3.tip()
 //			}	
 //		}	
 		if (typeof d.strain != "undefined") {
-			string = d.strain;
+			string = d.strain+' '+d.date;
 		}		
-		return string;
+	    return string;
 	});
-	
-var treeplot;
+
+var toolbranch = d3.tip()
+	.direction('e')
+	.attr('class', 'd3-tip')
+    .offset([0, 10])
+	.html(function(d) {
+		string = ""
+		if (typeof d.target != "undefined") {
+		    for (var i=0; i<regions.length;i++){
+			string += region_codes[regions[i]]+': '+d.target.geodis[regions[i]]+', ';
+
+		    }
+		}		
+		return string+" HA1 muts: "+d.target.HA1_muts;
+	});
+
 
 function rescale(dMin, dMax, lMin, lMax, xScale, yScale, nodes, links, tips, internals, vaccines) {
     var scale_factor = (yScale.domain()[1]-yScale.domain()[0])/(lMax-lMin);
@@ -349,19 +382,31 @@ function load_tree(){
 	.attr("width", width)
 	.attr("height", height);
     treeplot.call(tooltip);		
+    treeplot.call(toolbranch);		
 
 
 d3.json(tree_file, function(error, root) {
     var nodes = tree.nodes(root), links = tree.links(nodes);
+    regions = d3.set(nodes.map(function (d) {
+	var reg;
+	try {reg = d.region;}
+	catch (e) {reg="undefined";}
+	return reg;})).values().filter(function (d) {return d!="undefined";});
+    var region_counts = {}
+    for (var i=0; i<regions.length; i++) region_counts[regions[i]]=0;
+    nodes.forEach(function (d) {region_counts[d.region]+=1;});
+
+    console.log("Regions found:", regions);
     var koelGTs = d3.set(nodes.map(function (d) {return d.koel;})).values();
-    koelGTs = koelGTs.filter(function (d) {return d.indexOf('X')==-1;});
     var koelGT_counts = {}
     for (var i=0; i<koelGTs.length; i++) koelGT_counts[koelGTs[i]]=0;
     nodes.forEach(function (d) {koelGT_counts[d.koel]+=1;});
-    for (var i=0; i<koelGTs.length; i++) {
-	console.log(koelGTs[i]+": "+koelGT_counts[koelGTs[i]]);
-    }
-    koelGTs = koelGTs.filter(function (d) {return koelGT_counts[d]>1;});
+    koelGTs = koelGTs.filter(function (d) {return koelGT_counts[d]>=minkoel;});
+    koelGTs.sort(function (a,b){var res; 
+				 if (koelGT_counts[a]>koelGT_counts[b]){ res=-1;}
+				 else if (koelGT_counts[a]<koelGT_counts[b]){ res=1;}
+				 else {res=0;}
+				 return res;});
     console.log("Koel genotypes passed filtering:"+koelGTs);
 
     var rootNode = nodes[0];
@@ -373,6 +418,7 @@ d3.json(tree_file, function(error, root) {
     setDates(internals);
     nodes.forEach(function (d) {d.dateval = new Date(d.date)});
     calc_deltaLBI(rootNode, nodes, false);
+    calcGeoDistribution(rootNode,regions);
 
     var vaccines = getVaccines(tips);	
     
@@ -418,7 +464,11 @@ d3.json(tree_file, function(error, root) {
     
     var dateColorScale = d3.time.scale()
 	.domain([earliestDate, globalDate])
-	.range(["#000000","#FF0000"]);
+/*        .interpolate(d3.interpolateRgb)
+        .range(["darkblue", "blue", "cyan",
+               "green", "yellow",
+               "orange", "red"]);
+*/	.range(["#000000","#FF0000"]);
     
     var yearScale = d3.scale.ordinal()
 	.domain([2014, "undefined", 2011, 2012, 2013])
@@ -442,20 +492,27 @@ d3.json(tree_file, function(error, root) {
 	cmap6 = ['#000000', '#FF0000']
     }
     var LBIColorScaleLog = d3.scale.linear()
+	.domain([0, 3.3e-3, 1e-2, 3.3e-2, 1e-1, 3.3e-1, 1.0])
+        .interpolate(d3.interpolateRgb)
+        .range(["darkblue", "blue", "cyan",
+               "green", "yellow",
+               "orange", "red"]);
+
+/*    var LBIColorScaleLog = d3.scale.linear()
 	.domain([1e-2, 3.3e-2, 1e-1, 3.3e-1, 1.0])
 	.range(cmap5);
-    
+  */  
     var LBIColorScaleLinear = d3.scale.linear()
 	.domain([0, .2, .4, .6, .8, 1.0])
 	.range(cmap6);
     
     var LBISizeScaleLinear = d3.scale.threshold()
-	.domain([0.0, 0.33, 0.66, 1.0])
-	.range([1, 2, 2.3, 2.7, 3]);	
+	.domain([0.0, 0.33, 0.66, 1.0-1e-10, 1])
+	.range([1, 2, 2.3, 2.7, 3, 7]);	
 
     var LBISizeScaleLog = d3.scale.log()
-	.domain([1e-2, 1.0])
-	.range([1, 3]);
+	.domain([1e-2, 1.0-1e-10, 1])
+	.range([1, 3,7]);
     
     var recencyVaccineSizeScale = d3.scale.threshold()
 	.domain([0.0])
@@ -475,11 +532,18 @@ d3.json(tree_file, function(error, root) {
 	for(var j, x, i = o.length; i; j = Math.floor(Math.random() * i), x = o[--i], o[i] = o[j], o[j] = x);
 	return o;
     };
+    region_range = []
+    for (var i=1; i<regions.length+1; i++) {
+	region_range.push(rainbow(regions.length+1, i));
+    }
     koelGTs_range = []
     for (var i=1; i<koelGTs.length+1; i++) {
 	koelGTs_range.push(rainbow(koelGTs.length+1, i));
     }
-    koelGTs_range = shuffle(koelGTs_range);
+    //koelGTs_range = shuffle(koelGTs_range);
+    var regionsColorScale = d3.scale.ordinal()
+	.domain(regions)
+	.range(region_range);
     var KoelColorScale = d3.scale.ordinal()
 	.domain(koelGTs)
 	.range(koelGTs_range);
@@ -492,6 +556,9 @@ d3.json(tree_file, function(error, root) {
 	    else if (size_scheme=="delta_LBI") return LBISizeScaleLinear(d.delta_LBI);
 	    else if (size_scheme=="LBI_log") return LBISizeScaleLog(d.LBI);
 	    else if (size_scheme=="delta_LBI_log") return LBISizeScaleLog(d.delta_LBI);
+	    else if (size_scheme=="1") return 1;
+	    else if (size_scheme=="2") return 2;
+	    else if (size_scheme=="4") return 4;
 	}else{ return 1;}
     };
 
@@ -504,6 +571,7 @@ d3.json(tree_file, function(error, root) {
 	    else if (color_scheme=="delta_LBI") col = LBIColorScaleLinear(d.delta_LBI);
 	    else if (color_scheme=="delta_LBI_log") col = LBIColorScaleLog(d.delta_LBI);
 	    else if (color_scheme=="koel") col = KoelColorScale(d.koel);
+	    else if (color_scheme=="region") col = regionsColorScale(d.region);
 	    //return d3.rgb(col).brighter([0.7]).toString();
 	    return d3.rgb(col).toString();
 	}else{
@@ -557,6 +625,8 @@ d3.json(tree_file, function(error, root) {
 	.style("stroke-width", 2)   
 	.style("stroke", function(d){return linkColoring(d);})
     	.style("cursor", "pointer")		 
+	.on('mouseover', function (d) {toolbranch.show(d, this);})
+      	.on('mouseout', toolbranch.hide)
      	.on('click', function(d) { 
       	    var dMin = minimumAttribute(d.target, "xvalue", d.target.xvalue),
       	    dMax = maximumAttribute(d.target, "xvalue", d.target.xvalue),
@@ -590,6 +660,31 @@ d3.json(tree_file, function(error, root) {
 	.attr('x', legendRectSize + legendSpacing)
 	.attr('y', legendRectSize - legendSpacing)
 	.text(function(d) {return d+" #:"+koelGT_counts[d]; });
+
+    var regionsLegend = treeplot.selectAll(".legend2")
+	.data(regions)
+	.enter().append('g')
+	.attr('class', 'legend2')
+	.attr('transform', function(d, i) {
+	    var height = legendRectSize + legendSpacing;
+	    var offset =  -100; 
+	    var horz = 150+2 * legendRectSize;
+	    var vert = i * height - offset;
+	    return 'translate(' + horz + ',' + vert + ')';
+	});
+
+
+    regionsLegend.append('rect')
+	.attr('width', legendRectSize)
+	.attr('height', legendRectSize)
+	.style('fill', function (d) {return regionsColorScale(d);})
+	.style('stroke', function (d) {return regionsColorScale(d);});
+
+    regionsLegend.append('text')
+	.attr('x', legendRectSize + legendSpacing)
+	.attr('y', legendRectSize - legendSpacing)
+	.text(function(d) {return region_codes[d]+" #:"+region_counts[d]; });
+
 
     tips.forEach(function (d) {
 	var date = new Date(d.date);		
@@ -743,6 +838,7 @@ d3.json(tree_file, function(error, root) {
 	d3.select("#nDateCutoff-value").text(ymd_format(dateCutoff));
 	console.log("changing date Cutoff to:" +dateCutoff);
 	calc_deltaLBI(rootNode, nodes, false);
+	calcGeoDistribution(rootNode,regions);
 	tipCirclesUpdate();
 	linkUpdate();
     });
@@ -759,6 +855,9 @@ d3.json(tree_file, function(error, root) {
 	calc_deltaLBI(rootNode, nodes, false);
 	tipCirclesUpdate();
     });
+    d3.select("#nBoundaryLayer").on("input", function(){
+	d3.select("#nBoundaryLayer-value").text(+this.value);
+    });
 
     d3.select("#nLBItau-value").text(LBItau);
     d3.select("#nLBItau").on("change", function(){
@@ -767,6 +866,9 @@ d3.json(tree_file, function(error, root) {
 	console.log("changing LBItau to:" +LBItau);
 	calc_deltaLBI(rootNode, nodes, false);
 	tipCirclesUpdate();
+    });
+    d3.select("#nLBItau").on("input", function(){
+	d3.select("#nLBItau-value").text(+this.value);
     });
 
     d3.select("#nNodeColoring").on("change", function(){
@@ -809,7 +911,6 @@ d3.select("#nTreeFile").on("change", function(){
     tree_file = d3.select(this).property('value');
     console.log(tree_file);
     d3.select("#treeplot").remove();
-    //document.getElementById("search").remove();
     load_tree();
     
 });
