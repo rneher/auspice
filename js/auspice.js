@@ -261,10 +261,6 @@ var deltaLBI_boundary_layer = 365;
 var tree = d3.layout.tree()
 	.size([height, width]);
 
-var treeplot = d3.select("#treeplot")
-	.attr("width", width)
-	.attr("height", height);
-		
 var tooltip = d3.tip()
 	.direction('e')
 	.attr('class', 'd3-tip')
@@ -289,7 +285,7 @@ var tooltip = d3.tip()
 		return string;
 	});
 	
-treeplot.call(tooltip);		
+var treeplot;
 
 function rescale(dMin, dMax, lMin, lMax, xScale, yScale, nodes, links, tips, internals, vaccines) {
     var scale_factor = (yScale.domain()[1]-yScale.domain()[0])/(lMax-lMin);
@@ -345,6 +341,15 @@ function rescale(dMin, dMax, lMin, lMax, xScale, yScale, nodes, links, tips, int
 
 var e = document.getElementById("nTreeFile");
 var tree_file = e.options[e.selectedIndex].value;
+
+function load_tree(){
+    treeplot = d3.select("#treeplot_div")
+	.append("svg")
+	.attr("id", "treeplot")
+	.attr("width", width)
+	.attr("height", height);
+    treeplot.call(tooltip);		
+
 
 d3.json(tree_file, function(error, root) {
     var nodes = tree.nodes(root), links = tree.links(nodes);
@@ -794,4 +799,17 @@ d3.json(tree_file, function(error, root) {
         .select(".domain")
         .select(function() { return this.parentNode.appendChild(this.cloneNode(true)); })
         .attr("class", "halo");		
+});
+};
+
+load_tree();
+
+d3.select("#nTreeFile").on("change", function(){
+    console.log("change tree file to ");
+    tree_file = d3.select(this).property('value');
+    console.log(tree_file);
+    d3.select("#treeplot").remove();
+    //document.getElementById("search").remove();
+    load_tree();
+    
 });
