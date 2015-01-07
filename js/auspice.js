@@ -494,10 +494,12 @@ d3.json(tree_file, function(error, root) {
     try{
 	if (typeof cmap5 === "undefined") {cmap5 = colorbrewer['RdYlBu'][5].reverse()};
 	if (typeof cmap6 === "undefined") {cmap6 = colorbrewer['RdYlBu'][6].reverse()};
+	if (typeof cmap7 === "undefined") {cmap7 = colorbrewer['RdYlBu'][7].reverse()};
     }catch (e) {
 	console.log("colorbrewer not available");
 	cmap5 = ['#000000', '#FF0000']
 	cmap6 = ['#000000', '#FF0000']
+	cmap7 = ["darkblue", "blue", "cyan", "green", "yellow", "orange", "red"]
     }
     /*var LBIColorScaleLog = d3.scale.linear()
 	.domain([0, 3.3e-3, 1e-2, 3.3e-2, 1e-1, 3.3e-1, 1.0])
@@ -507,9 +509,10 @@ d3.json(tree_file, function(error, root) {
                "orange", "red"]);
 */
     var LBIColorScaleLog = d3.scale.linear()
-	.domain([1e-3, 1e-2, 1e-1, 3.3e-1, 1.0])
+	.domain([1e-3, 3.3e-3, 1e-2, 3.3e-2, 1e-1, 3.3e-1, 1.0])
+	//.domain([1e-3, 1e-2, 1e-1, 3.3e-1, 1.0])
 	.clamp(true)
-	.range(cmap5);
+	.range(cmap7);
     
     var LBIColorScaleLinear = d3.scale.linear()
 	.domain([0, .2, .4, .6, .8, 1.0])
