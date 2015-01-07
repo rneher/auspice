@@ -72,9 +72,9 @@ A little while ago, <a href="http://www.kitp.ucsb.edu/shraiman/">Boris Shraiman<
   <li>mouse-over tips: display strain name and collection date</li>
   <li>mouse-over branches: display geographic composition of the clade and HA1 mutations on branch</li>
   <li>coloring of nodes and branches by <i>Koel genotype</i>, i.e. the amino acides at HA1 positions 145,155,156,158,159,189,193 </li>
-  <li> coloring of nodes and/or links by (rough) sampling location </li>
-  <li> coloring of nodes and/or links by sampling date </li>
-  <li> coloring of nodes and/or links by the <a href="http://elifesciences.org/content/3/e03568">local branching index (LBI)</a> used to predict future clade expansion (see below)</li> 
+  <li> coloring of nodes and/or branches by (rough) sampling location </li>
+  <li> coloring of nodes and/or branches by sampling date </li>
+  <li> coloring of nodes and/or branches by the <a href="http://elifesciences.org/content/3/e03568">local branching index (LBI)</a> used to predict future clade expansion (see below)</li> 
   <li> by moving the slider <i>date cutoff</i>, past evolution of A/H3N2 can be replayed. LBI, geographic distribution etc are recalculated.</li>
   <li> If you choose <i>LBI</i> for node size, a big dot will mark the top choice using data up to the cutoff. </li>
 </ul> 
@@ -110,11 +110,11 @@ A little while ago, <a href="http://www.kitp.ucsb.edu/shraiman/">Boris Shraiman<
     
     Link color:
     <select id = "nLinkColoring">
-      <option value="delta_LBI_log">LBI</option>
+      <option selected="selected" value="delta_LBI_log">LBI</option>
       <option value="LBI_log">global LBI</option>
       <option value="date">date</option>
       <option value="koel">Koel genotype</option>
-      <option selected="selected"  value="None">None</option>
+      <option value="None">None</option>
     </select> 
     <hr>
     
@@ -128,7 +128,6 @@ A little while ago, <a href="http://www.kitp.ucsb.edu/shraiman/">Boris Shraiman<
 	<button id="reset" style="float:right;">reset</button>    
     </div>
     
-    <script src="https://raw.githubusercontent.com/mbostock/d3/master/lib/colorbrewer/colorbrewer.js"></script>
     <script src="js/d3.tip.js"></script>	
     <script src="js/autocomplete.js"></script>	
     <script src="js/auspice.js"></script>			

@@ -2,6 +2,17 @@ d3.select("body")
     .style("color", "black")
     .style("background-color", "white");
 
+var  colorbrewerRdYlBu ={
+3: ["#fc8d59","#ffffbf","#91bfdb"],
+4: ["#d7191c","#fdae61","#abd9e9","#2c7bb6"],
+5: ["#d7191c","#fdae61","#ffffbf","#abd9e9","#2c7bb6"],
+6: ["#d73027","#fc8d59","#fee090","#e0f3f8","#91bfdb","#4575b4"],
+7: ["#d73027","#fc8d59","#fee090","#ffffbf","#e0f3f8","#91bfdb","#4575b4"],
+8: ["#d73027","#f46d43","#fdae61","#fee090","#e0f3f8","#abd9e9","#74add1","#4575b4"],
+9: ["#d73027","#f46d43","#fdae61","#fee090","#ffffbf","#e0f3f8","#abd9e9","#74add1","#4575b4"],
+10: ["#a50026","#d73027","#f46d43","#fdae61","#fee090","#e0f3f8","#abd9e9","#74add1","#4575b4","#313695"],
+11: ["#a50026","#d73027","#f46d43","#fdae61","#fee090","#ffffbf","#e0f3f8","#abd9e9","#74add1","#4575b4","#313695"]};
+
 function depthFirstSearch(node) {
     if (typeof node.children != "undefined") {
 	for (var i=0, c=node.children.length; i<c; i++) {
@@ -80,7 +91,7 @@ function getVaccines(tips) {
     tips.forEach(function (tip) {
 	if (vaccineStrains.indexOf(tip.strain) != -1) {
 	    tip.vaccine = true;
-	    tip.date = vaccineChoice[tip.strain];
+	    //tip.date = vaccineChoice[tip.strain];
 	    vaccines.push(tip);
 	}else{tip.vaccine=false;}
     })
@@ -210,25 +221,6 @@ function calc_deltaLBI(node, allnodes, logdelta){
 };
 
 
-/*
-  function setFrequencies(node, date) {
-	if (typeof node.frequencies != "undefined") {
-		var sdate = ymd_format(date);
-		var dates = [];
-		for (var i=0, c=node.frequencies.length; i<c; i++) {
-			dates.push(node.frequencies[i].date);
-		}
-		var index = d3.bisect(dates, sdate) - 1;
-		node.frequency = node.frequencies[index].frequency;
-	}
-	if (typeof node.children != "undefined") {
-		for (var i=0, c=node.children.length; i<c; i++) {
-			setFrequencies(node.children[i], date);
-		}
-	}	
-}
-*/
-
 function minimumAttribute(node, attr, min) {
 	if (typeof node.children != "undefined") {
 		for (var i=0, c=node.children.length; i<c; i++) {
@@ -261,6 +253,7 @@ function maximumAttribute(node, attr, max) {
 var treeplot;
 var regions;
 var region_codes = {'north_america':'NA', 'south_america':'SA', 'europe':'EU','asia':'AS','oceania':'OC'} 
+var region_names = {'north_america':'North America (NA)', 'south_america':'South America (SA)', 'europe':'Europe (EU)','asia':'Asia (AS)','oceania':'Oceania (OC)'} 
 var width = 800,
 	height = 600;
 
@@ -287,18 +280,6 @@ var tooltip = d3.tip()
     .offset([0, 10])
 	.html(function(d) {
 		string = ""
-//		if (typeof d.frequency != "undefined") {
-//			if (d.frequency > 0.01) {
-//				string = d.frequency;
-//			}
-//		}
-//		if (typeof d.target != "undefined") {
-//			if (typeof d.target.frequency != "undefined") {
-//				if (d.target.frequency > 0.01) {
-//					string = d.target.frequency;
-//				}
-//			}	
-//		}	
 		if (typeof d.strain != "undefined") {
 			string = d.strain+' '+d.date;
 		}		
@@ -392,7 +373,7 @@ d3.json(tree_file, function(error, root) {
 	var reg;
 	try {reg = d.region;}
 	catch (e) {reg="undefined";}
-	return reg;})).values().filter(function (d) {return d!="undefined";});
+	return reg;})).values().filter(function (d) {return d!="undefined";}).sort();
     var region_counts = {}
     for (var i=0; i<regions.length; i++) region_counts[regions[i]]=0;
     nodes.forEach(function (d) {region_counts[d.region]+=1;});
@@ -492,22 +473,16 @@ d3.json(tree_file, function(error, root) {
     
     //if (colorbrewer!="undefined"){
     try{
-	if (typeof cmap5 === "undefined") {cmap5 = colorbrewer['RdYlBu'][5].reverse()};
-	if (typeof cmap6 === "undefined") {cmap6 = colorbrewer['RdYlBu'][6].reverse()};
-	if (typeof cmap7 === "undefined") {cmap7 = colorbrewer['RdYlBu'][7].reverse()};
+	if (typeof cmap5 === "undefined") {cmap5 = colorbrewerRdYlBu[5].reverse()};
+	if (typeof cmap6 === "undefined") {cmap6 = colorbrewerRdYlBu[6].reverse()};
+	if (typeof cmap7 === "undefined") {cmap7 = colorbrewerRdYlBu[7].reverse()};
     }catch (e) {
 	console.log("colorbrewer not available");
 	cmap5 = ['#000000', '#FF0000']
 	cmap6 = ['#000000', '#FF0000']
 	cmap7 = ["darkblue", "blue", "cyan", "green", "yellow", "orange", "red"]
     }
-    /*var LBIColorScaleLog = d3.scale.linear()
-	.domain([0, 3.3e-3, 1e-2, 3.3e-2, 1e-1, 3.3e-1, 1.0])
-        .interpolate(d3.interpolateRgb)
-        .range(["darkblue", "blue", "cyan",
-               "green", "yellow",
-               "orange", "red"]);
-*/
+
     var LBIColorScaleLog = d3.scale.linear()
 	.domain([1e-3, 3.3e-3, 1e-2, 3.3e-2, 1e-1, 3.3e-1, 1.0])
 	//.domain([1e-3, 1e-2, 1e-1, 3.3e-1, 1.0])
@@ -519,11 +494,11 @@ d3.json(tree_file, function(error, root) {
 	.range(cmap6);
     
     var LBISizeScaleLinear = d3.scale.threshold()
-	.domain([0.0, 0.33, 0.66, 1.0-1e-10, 1])
+	.domain([0.0, 0.33, 0.66, 0.8, 0.99])
 	.range([1, 2, 2.3, 2.7, 3, 7]);	
 
     var LBISizeScaleLog = d3.scale.log()
-	.domain([1e-3,1e-2, 1.0-1e-10, 1])
+	.domain([1e-3,1e-2, 0.9, 0.99])
 	.clamp(true)
 	.range([1,2, 3,7]);
     
@@ -597,17 +572,6 @@ d3.json(tree_file, function(error, root) {
 	d.y = yScale(d.yvalue);			 
     });
 
-    // straight links
-    /*	var link = treeplot.selectAll(".link")
-	.data(links)
-	.enter().append("line")
-	.attr("class", "link")
-	.attr("x1", function(d) { return d.source.x; })
-	.attr("y1", function(d) { return d.source.y; })
-	.attr("x2", function(d) { return d.target.x; })
-	.attr("y2", function(d) { return d.target.y; }); 
-    */	    	    
-    
     var link = treeplot.selectAll(".link")
 	.data(links)
 	.enter().append("polyline")
@@ -631,55 +595,79 @@ d3.json(tree_file, function(error, root) {
       	    rescale(dMin, dMax, lMin, lMax, xScale, yScale, nodes, links, tips, internals, vaccines);
       	}); 
 
+
     var legendRectSize = 18;
     var legendSpacing = 4;
-    var koelLegend = treeplot.selectAll(".legend")
-	.data(koelGTs)
-	.enter().append('g')
-	.attr('class', 'legend')
-	.attr('transform', function(d, i) {
-	    var height = legendRectSize + legendSpacing;
-	    var offset =  -100; 
-	    var horz = 2 * legendRectSize;
-	    var vert = i * height - offset;
-	    return 'translate(' + horz + ',' + vert + ')';
-	});
+    function koelLegend(){
+	var tmp_leg = treeplot.selectAll(".legend")
+	    .data(koelGTs)
+	    .enter().append('g')
+	    .attr('class', 'legend')
+	    .attr('transform', function(d, i) {
+		var height = legendRectSize + legendSpacing;
+		var offset =  -100; 
+		var horz = 2 * legendRectSize;
+		var vert = i * height - offset;
+		return 'translate(' + horz + ',' + vert + ')';
+	    });
+	
+	tmp_leg.append('rect')
+	    .attr('width', legendRectSize)
+	    .attr('height', legendRectSize)
+	    .style('fill', function (d) {return KoelColorScale(d);})
+	    .style('stroke', function (d) {return KoelColorScale(d);});
+	
+	tmp_leg.append('text')
+	    .attr('x', legendRectSize + legendSpacing)
+	    .attr('y', legendRectSize - legendSpacing)
+	    .text(function(d) {return d+" #:"+koelGT_counts[d]; });
+	
+	return tmp_leg;
+    }
 
+    function regionsLegend(){
+	var tmp_leg = treeplot.selectAll(".legend2")
+	    .data(regions)
+	    .enter().append('g')
+	    .attr('class', 'legend2')
+	    .attr('transform', function(d, i) {
+		var height = legendRectSize + legendSpacing;
+		var offset =  -100; 
+		var horz = 2 * legendRectSize;
+		var vert = 200 + i * height - offset;
+		return 'translate(' + horz + ',' + vert + ')';
+	    });
+	
+	
+	tmp_leg.append('rect')
+	    .attr('width', legendRectSize)
+	    .attr('height', legendRectSize)
+	    .style('fill', function (d) {return regionsColorScale(d);})
+	    .style('stroke', function (d) {return regionsColorScale(d);});
+	
+	tmp_leg.append('text')
+	    .attr('x', legendRectSize + legendSpacing)
+	    .attr('y', legendRectSize - legendSpacing)
+	    .text(function(d) {return region_names[d]+" #:"+region_counts[d]; });
+	return tmp_leg;
+    };
 
-    koelLegend.append('rect')
-	.attr('width', legendRectSize)
-	.attr('height', legendRectSize)
-	.style('fill', function (d) {return KoelColorScale(d);})
-	.style('stroke', function (d) {return KoelColorScale(d);});
+    var nodeLegend = "none";
+    var branchLegend = "none";
+    function makeLegends(){
+	console.log("removing old legend");
+	treeplot.selectAll(".legend").remove();
+	treeplot.selectAll(".legend2").remove();
 
-    koelLegend.append('text')
-	.attr('x', legendRectSize + legendSpacing)
-	.attr('y', legendRectSize - legendSpacing)
-	.text(function(d) {return d+" #:"+koelGT_counts[d]; });
+	if (color_scheme=="region") {nodeLegend=regionsLegend();}
+	else if (color_scheme=="koel") {nodeLegend=koelLegend();}
+	else {nodeLegend="none";}
 
-    var regionsLegend = treeplot.selectAll(".legend2")
-	.data(regions)
-	.enter().append('g')
-	.attr('class', 'legend2')
-	.attr('transform', function(d, i) {
-	    var height = legendRectSize + legendSpacing;
-	    var offset =  -100; 
-	    var horz = 150+2 * legendRectSize;
-	    var vert = i * height - offset;
-	    return 'translate(' + horz + ',' + vert + ')';
-	});
-
-
-    regionsLegend.append('rect')
-	.attr('width', legendRectSize)
-	.attr('height', legendRectSize)
-	.style('fill', function (d) {return regionsColorScale(d);})
-	.style('stroke', function (d) {return regionsColorScale(d);});
-
-    regionsLegend.append('text')
-	.attr('x', legendRectSize + legendSpacing)
-	.attr('y', legendRectSize - legendSpacing)
-	.text(function(d) {return region_codes[d]+" #:"+region_counts[d]; });
+	if (link_color_scheme=="region") {branchLegend=regionsLegend();}
+	else if (link_color_scheme=="koel") {branchLegend=koelLegend();}
+	else {branchLegend="none";}
+    }
+    makeLegends();
 
 
     tips.forEach(function (d) {
@@ -706,6 +694,7 @@ d3.json(tree_file, function(error, root) {
 	})
       	.on('mouseout', tooltip.hide);
     
+
     function tipCirclesUpdate(){
     	treeplot.selectAll(".tip")
 	    .style("fill", function(d){return nodeColoring(d);})	
@@ -872,13 +861,15 @@ d3.json(tree_file, function(error, root) {
 	color_scheme=d3.select(this).property('value');
 	console.log(color_scheme);
 	tipCirclesUpdate();
+	makeLegends();
     });
 
     d3.select("#nLinkColoring").on("change", function(){
-	console.log("change link coloring to");
+	console.log("change branch coloring to");
 	link_color_scheme=d3.select(this).property('value');
 	console.log(color_scheme);
 	linkUpdate();
+	makeLegends();
     });
 
     d3.select("#nNodeSizing").on("change", function(){
