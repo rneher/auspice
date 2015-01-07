@@ -66,14 +66,27 @@
   </head>
   
   <body>
-    Tree file (reload to take effect):
+    <h2>Interactive visualization of influenza A/H3N2 evolution and prediction</h2>
+A little while ago, <a href="http://www.kitp.ucsb.edu/shraiman/">Boris Shraiman</a>, <a href="http://www.infectiousdisease.cam.ac.uk/directory/car44@cam.ac.uk">Colin Russell</a> and myself published a <a href="http://elifesciences.org/content/3/e03568">paper on predicting evolution</a>, specifically predicting influenza evolution. This page is meant to explore influenza A/H3N2 evolution and predictions in the past and present. Different strains set corresponding to 3, 5, 10, 20 year intervals of past evolution can be chosen from the pull down menu. The interactive visualization below (building on <a href="https://www.github.com/blab/augur">augur</a>, <a href="https://blab.github.io/auspice">auspice</a> by <a href="http://bedford.io">Trevor Bedford</a>) supports the following
+ <ul>
+  <li>mouse-over tips: display strain name and collection date</li>
+  <li>mouse-over branches: display geographic composition of the clade and HA1 mutations on branch</li>
+  <li>coloring of nodes and branches by <i>Koel genotype</i>, i.e. the amino acides at HA1 positions 145,155,156,158,159,189,193 </li>
+  <li> coloring of nodes and/or links by (rough) sampling location </li>
+  <li> coloring of nodes and/or links by sampling date </li>
+  <li> coloring of nodes and/or links by the <a href="http://elifesciences.org/content/3/e03568">local branching index (LBI)</a> used to predict future clade expansion (see below)</li> 
+  <li> by moving the slider <i>date cutoff</i>, past evolution of A/H3N2 can be replayed. LBI, geographic distribution etc are recalculated.</li>
+  <li> If you choose <i>LBI</i> for node size, a big dot will mark the top choice using data up to the cutoff. </li>
+</ul> 
+<hr>
     <p>
+    Tree file:
       <select id = "nTreeFile">
-	<option value="https://s3.amazonaws.com/augur-data/data/auspice.json">Trevor AWS</option>
-	<option value="data/20150105_tree_3y.json">20150105_tree_3y.json</option>
+	<option selected="selected" value="data/20150105_tree_3y.json">20150105_tree_3y.json</option>
 	<option value="data/20150105_tree_5y.json">20150105_tree_5y.json</option>
 	<option value="data/20150105_tree_10y.json">20150105_tree_10y.json</option>
 	<option value="data/20150105_tree_20y.json">20150105_tree_20y.json</option>
+	<option value="https://s3.amazonaws.com/augur-data/data/auspice.json">Trevor's tree on AWS</option>
       </select> 
     </p>
     <hr>
@@ -101,7 +114,6 @@
       <option value="LBI_log">global LBI</option>
       <option value="date">date</option>
       <option value="koel">Koel genotype</option>
-      <option value="region">Geographic region</option>
       <option selected="selected"  value="None">None</option>
     </select> 
     <hr>
@@ -116,7 +128,7 @@
 	<button id="reset" style="float:right;">reset</button>    
     </div>
     
-    <script src="https://raw.githubusercontent.com/mbostock/d3/master/lib/colorbrewer/colorbrewer.js"></script>	
+    <script src="https://raw.githubusercontent.com/mbostock/d3/master/lib/colorbrewer/colorbrewer.js"></script>
     <script src="js/d3.tip.js"></script>	
     <script src="js/autocomplete.js"></script>	
     <script src="js/auspice.js"></script>			
@@ -143,8 +155,8 @@
     </p>
     <p>
       <label for="nLBItau" 
-             style="display: inline-block; width: 600px; text-align: left">
-        &#964<sub>LBI</sub> = <span id="nLBItau-value">…</span> <i> --- time scale used to calculate the LBI. Values of about &#960/10 are useful.</i>
+             style="display: inline-block; width: 1000px; text-align: left">
+        &#964<sub>LBI</sub> = <span id="nLBItau-value">…</span> <i> --- time scale used to calculate the LBI. Values of about &#960/10 are useful. see <a href="http://neherlab.wordpress.com/2014/11/11/now-out-in-elife-predicting-evolution/">here for an explanation of the LBI</a></i>
       </label>
     </p><p>
       <input type="range" min="0.0001" max="0.002" value="0.0007" step="0.0001" id="nLBItau">

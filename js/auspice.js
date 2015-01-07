@@ -79,9 +79,10 @@ function getVaccines(tips) {
     vaccines = [];
     tips.forEach(function (tip) {
 	if (vaccineStrains.indexOf(tip.strain) != -1) {
+	    tip.vaccine = true;
 	    tip.date = vaccineChoice[tip.strain];
 	    vaccines.push(tip);
-	}
+	}else{tip.vaccine=false;}
     })
     return vaccines;
 }
@@ -431,7 +432,7 @@ d3.json(tree_file, function(error, root) {
     }); 
     
     var dateValues = tips.filter(function(d) {
-	return typeof d.date === 'string';
+	return typeof (d.date === 'string')&&(d.vaccine==false);
     }).map(function(d) {
   	return new Date(d.date);
     }); 	
@@ -451,7 +452,15 @@ d3.json(tree_file, function(error, root) {
 	.range([10, height-10]);	
     
     var earliestDate = new Date(d3.min(dateValues));
-    earliestDate.setDate(earliestDate.getDate() + 20);	
+    earliestDate.setDate(earliestDate.getDate() - 20);	
+    console.log("Earliest strain:"+earliestDate);
+    var dateRange=[]; 
+    var ydiff= globalDate-earliestDate;
+    for (var i=0; i<7;i++){
+	var tmp_date = new Date;
+	tmp_date.setDate(globalDate.getDate()-i*ydiff/6/1000/3600/24);
+	dateRange.push(tmp_date);
+    }
     
     var dateScale = d3.time.scale()
 	.domain([earliestDate, globalDate])
@@ -463,12 +472,11 @@ d3.json(tree_file, function(error, root) {
 	.range([0, 100]);
     
     var dateColorScale = d3.time.scale()
-	.domain([earliestDate, globalDate])
-/*        .interpolate(d3.interpolateRgb)
+	.domain(dateRange.reverse())
+        .interpolate(d3.interpolateRgb)
         .range(["darkblue", "blue", "cyan",
                "green", "yellow",
                "orange", "red"]);
-*/	.range(["#000000","#FF0000"]);
     
     var yearScale = d3.scale.ordinal()
 	.domain([2014, "undefined", 2011, 2012, 2013])
@@ -484,24 +492,25 @@ d3.json(tree_file, function(error, root) {
     
     //if (colorbrewer!="undefined"){
     try{
-	cmap5 = colorbrewer['RdYlBu'][5].reverse();
-	cmap6 = colorbrewer['RdYlBu'][6].reverse();
+	if (typeof cmap5 === "undefined") {cmap5 = colorbrewer['RdYlBu'][5].reverse()};
+	if (typeof cmap6 === "undefined") {cmap6 = colorbrewer['RdYlBu'][6].reverse()};
     }catch (e) {
 	console.log("colorbrewer not available");
 	cmap5 = ['#000000', '#FF0000']
 	cmap6 = ['#000000', '#FF0000']
     }
-    var LBIColorScaleLog = d3.scale.linear()
+    /*var LBIColorScaleLog = d3.scale.linear()
 	.domain([0, 3.3e-3, 1e-2, 3.3e-2, 1e-1, 3.3e-1, 1.0])
         .interpolate(d3.interpolateRgb)
         .range(["darkblue", "blue", "cyan",
                "green", "yellow",
                "orange", "red"]);
-
-/*    var LBIColorScaleLog = d3.scale.linear()
-	.domain([1e-2, 3.3e-2, 1e-1, 3.3e-1, 1.0])
+*/
+    var LBIColorScaleLog = d3.scale.linear()
+	.domain([1e-3, 1e-2, 1e-1, 3.3e-1, 1.0])
+	.clamp(true)
 	.range(cmap5);
-  */  
+    
     var LBIColorScaleLinear = d3.scale.linear()
 	.domain([0, .2, .4, .6, .8, 1.0])
 	.range(cmap6);
@@ -511,8 +520,9 @@ d3.json(tree_file, function(error, root) {
 	.range([1, 2, 2.3, 2.7, 3, 7]);	
 
     var LBISizeScaleLog = d3.scale.log()
-	.domain([1e-2, 1.0-1e-10, 1])
-	.range([1, 3,7]);
+	.domain([1e-3,1e-2, 1.0-1e-10, 1])
+	.clamp(true)
+	.range([1,2, 3,7]);
     
     var recencyVaccineSizeScale = d3.scale.threshold()
 	.domain([0.0])
@@ -526,27 +536,10 @@ d3.json(tree_file, function(error, root) {
 	.domain([0, 1])
 	.range([1, 10]);
 
-    //+ Jonas Raoni Soares Silva
-    //@ http://jsfromhell.com/array/shuffle [v1.0]
-    function shuffle(o){ //v1.0
-	for(var j, x, i = o.length; i; j = Math.floor(Math.random() * i), x = o[--i], o[i] = o[j], o[j] = x);
-	return o;
-    };
-    region_range = []
-    for (var i=1; i<regions.length+1; i++) {
-	region_range.push(rainbow(regions.length+1, i));
-    }
-    koelGTs_range = []
-    for (var i=1; i<koelGTs.length+1; i++) {
-	koelGTs_range.push(rainbow(koelGTs.length+1, i));
-    }
-    //koelGTs_range = shuffle(koelGTs_range);
-    var regionsColorScale = d3.scale.ordinal()
+    var regionsColorScale = d3.scale.category10()
 	.domain(regions)
-	.range(region_range);
-    var KoelColorScale = d3.scale.ordinal()
-	.domain(koelGTs)
-	.range(koelGTs_range);
+    var KoelColorScale = d3.scale.category10()
+	.domain(koelGTs);
 
     
     function nodeSizing(d){
