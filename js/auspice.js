@@ -552,14 +552,17 @@ d3.json(tree_file, function(error, root) {
 
     function linkColoring(d) { 
 	if (d.target.alive){
-	    if (link_color_scheme=="LBI_log") col = LBIColorScaleLog(d.target.LBI); 
-	    else if (link_color_scheme=="LBI") col = LBIColorScaleLinear(d.target.LBI); 
-	    else if (link_color_scheme=="recency") col = recencyColorScale(d.target.diff);
-	    else if (link_color_scheme=="date") col = dateColorScale(d.target.dateval);
-	    else if (link_color_scheme=="delta_LBI") col = LBIColorScaleLinear(d.target.delta_LBI);
-	    else if (link_color_scheme=="delta_LBI_log") col = LBIColorScaleLog(d.target.delta_LBI);
-	    else if (link_color_scheme=="koel") col = KoelColorScale(d.target.koel);
-	    else if (link_color_scheme=="None") col = '#AAAAAA';
+	    var cs;
+	    if (link_color_scheme=="node") {cs=color_scheme;}
+	    else {cs=link_color_scheme;}
+	    if (cs=="LBI_log") col = LBIColorScaleLog(d.target.LBI); 
+	    else if (cs=="LBI") col = LBIColorScaleLinear(d.target.LBI); 
+	    else if (cs=="recency") col = recencyColorScale(d.target.diff);
+	    else if (cs=="date") col = dateColorScale(d.target.dateval);
+	    else if (cs=="delta_LBI") col = LBIColorScaleLinear(d.target.delta_LBI);
+	    else if (cs=="delta_LBI_log") col = LBIColorScaleLog(d.target.delta_LBI);
+	    else if (cs=="koel") col = KoelColorScale(d.target.koel);
+	    else if (cs=="None") col = '#AAAAAA';
 	    //return d3.rgb(col).brighter([0.7]).toString();
 	    return d3.rgb(col).toString();
 	}else{
@@ -606,7 +609,7 @@ d3.json(tree_file, function(error, root) {
 	    .attr('transform', function(d, i) {
 		var height = legendRectSize + legendSpacing;
 		var offset =  -100; 
-		var horz = 2 * legendRectSize;
+		var horz = 0.5 * legendRectSize;
 		var vert = i * height - offset;
 		return 'translate(' + horz + ',' + vert + ')';
 	    });
@@ -633,7 +636,7 @@ d3.json(tree_file, function(error, root) {
 	    .attr('transform', function(d, i) {
 		var height = legendRectSize + legendSpacing;
 		var offset =  -100; 
-		var horz = 2 * legendRectSize;
+		var horz = 0.5 * legendRectSize;
 		var vert = 200 + i * height - offset;
 		return 'translate(' + horz + ',' + vert + ')';
 	    });
@@ -725,72 +728,20 @@ d3.json(tree_file, function(error, root) {
 	})	
       	.on('mouseout', tooltip.hide);					
     
-    
-    var drag = d3.behavior.drag()
-	.origin(function(d) { return d; })
-	.on("drag", dragged)
-	.on("dragstart", function() {
-	    d3.select(this).style("fill", "#799CB3");
-	})
-	.on("dragend", function() {
-	    d3.select(this).style("fill", "#CCC");
-	});
-    
-    function dragged(d) {
-	d.date = dateScale.invert(d3.event.x);
-	d.x = dateScale(d.date);
-	d3.selectAll(".counter-text")
-	    .text(function(d){ 
-    		return format(d.date) 
-    	    });
-	globalDate = d.date;
-	nodes.forEach(function (d) {
-	    var date = new Date(d.date);		
-	    var oneYear = 365.25*24*60*60*1000; // days*hours*minutes*seconds*milliseconds
-	    var diffYears = (globalDate.getTime() - date.getTime()) / oneYear;		
-	    d.diff = diffYears; 
-	});			
-	d3.selectAll(".tip")
-	    .attr("r", function(d) {
-				return recencySizeScale(d.diff);
-	    })		
-	    .style("fill", function(d) { 
-		var col = recencyColorScale(d.diff);
-		return d3.rgb(col).brighter([0.7]).toString();	
-	    })	    		
-	    .style("stroke", function(d) { 
-		var col = recencyColorScale(d.diff);
-		return d3.rgb(col).toString();	
-	    }); 
-	d3.selectAll(".vaccine")
-	    .attr("r", function(d) {
-		return recencyVaccineSizeScale(d.diff);
-	    });	
-	d3.selectAll(".link")
-	    .style("stroke-width", function(d) {
-		return recencyLinksSizeScale(d.target.diff);		    	
-	    });			
-	
-    }
-    
-    var counterData = {}
-    counterData['date'] = globalDate	
-    counterData['x'] = dateScale(globalDate)
-    
+        
     var format = d3.time.format("%Y %b %-d");
     var counterText = treeplot.selectAll(".counter-text")
-	.data([counterData])
+	.data([tree_file])
 	.enter()
 	.append("text")			
 	.attr("class", "counter-text") 
-    	.attr("transform", "translate(100,40)")
-    	.style("text-anchor", "middle")
+    	.attr("transform", "translate(00,40)")
+    	.style("text-anchor", "left")
     	.style("alignment-baseline", "middle")
     	.text(function(d){ 
-    	    return format(d.date) 
+    	    return "tree: "+tree_file; //.split('/')[1].substring(0,8);
     	})
-    	.style("cursor", "col-resize")
-    	.call(drag);     
+    	.style("cursor", "col-resize");     
     
     d3.select("#reset")
         .on("click", function(d) {
@@ -860,6 +811,12 @@ d3.json(tree_file, function(error, root) {
 	console.log("change node coloring to");
 	color_scheme=d3.select(this).property('value');
 	console.log(color_scheme);
+	var tmp = document.getElementById("nLinkColoring");
+	link_color_scheme = tmp.options[tmp.selectedIndex].value; 
+	if (link_color_scheme=="node"){
+	    console.log("change branch coloring to");
+	    linkUpdate();
+	}
 	tipCirclesUpdate();
 	makeLegends();
     });
@@ -867,7 +824,7 @@ d3.json(tree_file, function(error, root) {
     d3.select("#nLinkColoring").on("change", function(){
 	console.log("change branch coloring to");
 	link_color_scheme=d3.select(this).property('value');
-	console.log(color_scheme);
+	console.log(link_color_scheme);
 	linkUpdate();
 	makeLegends();
     });
